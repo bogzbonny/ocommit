@@ -2,6 +2,16 @@
 name = "ocommit"
 version = "0.1.0"
 edition = "2024"
+authors = ["Bogz Bonny <bogzbonny@protonmail.com>", "The Ocommit Developers"] 
+keywords = ["llm", "git", "ollama", "cli"]
+description = "quickly create a git commit message with ollama and commit, locally"
+documentation = "https://docs.rs/ocommit/latest/ocommit/"
+repository = "https://github.com/bogzbonny/ocommit"
+categories = ["development-tools"]
+readme = "README.md"
+license = "MIT"
+
+
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
