@@ -1,6 +1,6 @@
 [package]
 name = "ocommit"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Bogz Bonny <bogzbonny@protonmail.com>", "The Ocommit Developers"] 
 keywords = ["llm", "git", "ollama", "cli"]
