@@ -92,10 +92,9 @@ async fn generate_message(diff: &str, cfg: &Config) -> Result<String, Box<dyn st
 }
 
 /// Obtain the current git diff against HEAD.
-/// includes staged changes
 /// if there are 1000 > lines changed lines, only include the file names
 fn git_diff(cfg: &Config) -> String {
-    let mut args = vec!["diff", "HEAD", "--staged", "--", ":"];
+    let mut args = vec!["diff", "HEAD", "--", ":"];
     for file in &cfg.ignore_files {
         args.push("!");
         args.push(file);
@@ -107,7 +106,7 @@ fn git_diff(cfg: &Config) -> String {
     let mut out = String::from_utf8_lossy(&out.stdout).to_string();
     // 60_000 ~= 1000 LOC at 60 chars per line
     if out.len() > 60_000 {
-        let mut args = vec!["diff", "HEAD", "--staged", "--name-status", "--", ":"];
+        let mut args = vec!["diff", "HEAD", "--name-status", "--", ":"];
         for file in &cfg.ignore_files {
             args.push("!");
             args.push(file);
