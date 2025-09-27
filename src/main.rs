@@ -105,7 +105,8 @@ fn git_diff(cfg: &Config) -> String {
         .output()
         .expect("Failed to execute git diff");
     let mut out = String::from_utf8_lossy(&out.stdout).to_string();
-    if out.len() > 1000 {
+    // 60_000 ~= 1000 LOC at 60 chars per line
+    if out.len() > 60_000 {
         let mut args = vec!["diff", "HEAD", "--staged", "--name-status", "--", ":"];
         for file in &cfg.ignore_files {
             args.push("!");
