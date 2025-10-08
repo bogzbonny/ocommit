@@ -93,6 +93,8 @@ async fn generate_message(diff: &str, cfg: &Config) -> Result<String, Box<dyn st
 
 /// Obtain the current git diff against HEAD.
 /// if there are 1000 > lines changed lines, only include the file names
+/// Obtain the current git diff against HEAD.
+/// If there are >1000 changed lines, only include the file names.
 fn git_diff(cfg: &Config) -> String {
     let mut args = vec!["diff", "HEAD", "--", ":"];
     for file in &cfg.ignore_files {
@@ -100,7 +102,7 @@ fn git_diff(cfg: &Config) -> String {
         args.push(file);
     }
     let out = Command::new("git")
-        .args(args)
+        .args(&args)
         .output()
         .expect("Failed to execute git diff");
     let mut out = String::from_utf8_lossy(&out.stdout).to_string();
@@ -112,9 +114,37 @@ fn git_diff(cfg: &Config) -> String {
             args.push(file);
         }
         let out_ = Command::new("git")
-            .args(args)
+            .args(&args)
             .output()
             .expect("Failed to execute git diff");
+        out = String::from_utf8_lossy(&out_.stdout).to_string();
+    }
+    out
+}
+
+/// Obtain the staged git diff (i.e., after `git add -A`).
+/// Mirrors `git_diff` but uses `--cached` to include new files.
+fn git_diff_cached(cfg: &Config) -> String {
+    let mut args = vec!["diff", "--cached", "HEAD", "--", ":"];
+    for file in &cfg.ignore_files {
+        args.push("!");
+        args.push(file);
+    }
+    let out = Command::new("git")
+        .args(&args)
+        .output()
+        .expect("Failed to execute git diff --cached");
+    let mut out = String::from_utf8_lossy(&out.stdout).to_string();
+    if out.len() > 60_000 {
+        let mut args = vec!["diff", "--cached", "HEAD", "--name-status", "--", ":"];
+        for file in &cfg.ignore_files {
+            args.push("!");
+            args.push(file);
+        }
+        let out_ = Command::new("git")
+            .args(&args)
+            .output()
+            .expect("Failed to execute git diff --cached");
         out = String::from_utf8_lossy(&out_.stdout).to_string();
     }
     out
@@ -179,10 +209,17 @@ async fn main() {
 
     // Display git status and wait for user confirmation.
     run_git_status();
-    let diff = git_diff(&cfg);
+    // First attempt to get a diff of tracked changes.
+    let mut diff = git_diff(&cfg);
+    // If there is no diff, stage all changes (including new files) and try again.
     if diff.trim().is_empty() {
-        eprintln!("No changes to commit.");
-        return;
+        // Stage everything to capture new/untracked files.
+        run_git_add();
+        diff = git_diff_cached(&cfg);
+        if diff.trim().is_empty() {
+            eprintln!("No changes to commit.");
+            return;
+        }
     }
 
     println!("-------------------------------------------------------");
