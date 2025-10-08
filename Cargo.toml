@@ -1,6 +1,6 @@
 [package]
 name = "ocommit"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 authors = ["Bogz Bonny <bogzbonny@protonmail.com>", "The Ocommit Developers"] 
 keywords = ["llm", "git", "ollama", "cli"]
@@ -10,8 +10,6 @@ repository = "https://github.com/bogzbonny/ocommit"
 categories = ["development-tools"]
 readme = "README.md"
 license = "MIT"
-
-
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
