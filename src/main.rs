@@ -168,9 +168,13 @@ fn clear_prev_line(lines: usize) {
 
 #[tokio::main]
 async fn main() {
-    // Simple CLI parsing for a dry‑run flag.
+    // Simple CLI parsing for flags.
     let args: Vec<String> = env::args().collect();
     let dry = args.iter().any(|a| a == "--dry" || a == "-d");
+    // Automatically push after commit.
+    let push = args.iter().any(|a| a == "--push" || a == "-p");
+    // Automatically accept the first generated commit message.
+    let accept = args.iter().any(|a| a == "--accept" || a == "-a");
     let cfg = load_config();
 
     // Display git status and wait for user confirmation.
@@ -183,23 +187,35 @@ async fn main() {
 
     println!("-------------------------------------------------------");
     println!("Generating commit message... \n\n");
-    let msg = loop {
-        let msg = match generate_message(&diff, &cfg).await {
+    let msg = if accept {
+        // Generate a single message and accept it automatically.
+        match generate_message(&diff, &cfg).await {
             Ok(m) => m,
             Err(e) => {
                 eprintln!("Failed to generate commit message: {}", e);
                 return;
             }
-        };
-        clear_prev_line(3);
-        println!("Press ENTER to accept, 'r' or TAB to retry, or ESC to cancel.");
-        println!("commit message: \n\t{msg}");
+        }
+    } else {
+        // Interactive loop allowing retry or cancel.
+        loop {
+            let msg = match generate_message(&diff, &cfg).await {
+                Ok(m) => m,
+                Err(e) => {
+                    eprintln!("Failed to generate commit message: {}", e);
+                    return;
+                }
+            };
+            clear_prev_line(3);
+            println!("Press ENTER to accept, 'r' or TAB to retry, or ESC to cancel.");
+            println!("commit message: \n\t{msg}");
 
-        let key = wait_for_single_key();
-        match key {
-            KeyCode::Enter => break msg,
-            KeyCode::Tab | KeyCode::Char('r') => continue,
-            _ => return,
+            let key = wait_for_single_key();
+            match key {
+                KeyCode::Enter => break msg,
+                KeyCode::Tab | KeyCode::Char('r') => continue,
+                _ => return,
+            }
         }
     };
 
@@ -209,4 +225,10 @@ async fn main() {
     }
     run_git_add();
     run_git_commit(&msg);
+    if push {
+        // Push the newly created commit.
+        let _ = Command::new("git")
+            .args(["push"])
+            .status();
+    }
 }
